@@ -1,0 +1,232 @@
+/* Main Window Background */
+QMainWindow, QWidget {
+    background-color: #141414;
+    color: #E5E5E5;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* Headings */
+QLabel#HeaderLabel {
+    font-size: 28px;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-bottom: 20px;
+}
+
+QLabel#SectionTitle {
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #E50914; /* Netflix Red Accent */
+    padding-bottom: 4px;
+}
+
+/* Cards (Content Containers) */
+/* Glass Panel (Apple Style) */
+QFrame#GlassPanel {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2B2B2B, stop:1 #1F1F1F);
+    border: 1px solid #444444;
+    border-top: 1px solid #555555;
+    border-radius: 12px;
+}
+
+QFrame#Card {
+    background-color: #1F1F1F;
+    border-radius: 8px;
+    border: 1px solid #333333;
+}
+
+/* Glossy Playback Buttons */
+QPushButton#PlaybackButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #444444, stop:1 #2B2B2B);
+    border: 1px solid #555555;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+}
+
+QPushButton#PlaybackButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #555555, stop:1 #383838);
+    border: 1px solid #777777;
+}
+
+QPushButton#PlaybackButton:pressed {
+    background: #222222;
+    border: 1px solid #333333;
+}
+
+/* FPS Box */
+QSpinBox#FPSBox {
+    background-color: #222222;
+    border: 1px solid #444444;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFFFFF;
+}
+
+/* List Widgets (Animator) */
+QListWidget {
+    background-color: #1A1A1A; /* Darker background for contrast */
+    border: 1px solid #333333;
+    border-radius: 8px;
+    color: #E8EAED;
+    padding: 5px;
+}
+
+QListWidget::item {
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+}
+
+QListWidget::item:selected {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #505050, stop:1 #383838);
+    border: 1px solid #666666;
+    color: #FFFFFF;
+}
+
+
+/* Tabs */
+QTabWidget::pane {
+    border: 1px solid #333333;
+    background: #1F1F1F;
+    border-radius: 4px;
+}
+
+QTabBar::tab {
+    background: #141414;
+    color: #B3B3B3;
+    padding: 10px 20px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background: #1F1F1F;
+    color: #E50914; /* Red Text for active tab */
+    border-bottom: 2px solid #E50914;
+    font-weight: bold;
+}
+
+QTabBar::tab:hover {
+    color: #FFFFFF;
+}
+
+/* Info Labels */
+QLabel {
+    color: #B3B3B3;
+}
+
+QLabel#SettingLabel {
+    font-size: 14px;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-bottom: 2px;
+}
+
+QLabel#SettingSubtext {
+    font-size: 11px; /* Positive non-zero size */
+    color: #999999;
+    font-style: italic;
+    margin-bottom: 10px;
+    line-height: 1.2;
+}
+
+/* Input Fields */
+QSpinBox, QComboBox, QLineEdit {
+    background-color: #333333;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 6px;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* Hide inner buttons for FPS Box */
+QSpinBox#FPSBox::up-button, QSpinBox#FPSBox::down-button {
+    width: 0px;
+    height: 0px;
+    border: none;
+}
+
+QSpinBox::up-button, QSpinBox::down-button {
+    background-color: #404040;
+    width: 20px;
+}
+
+QComboBox::drop-down {
+    border: none;
+    background: #404040;
+    width: 25px;
+}
+
+/* Standard Buttons (Non-Glossy) */
+QPushButton {
+    background-color: #333333;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #4D4D4D;
+}
+
+QPushButton:checked {
+    background-color: #383838;
+    border: 1px solid #1A73E8;
+    color: #1A73E8;
+}
+
+QPushButton#DestructiveButton {
+    background-color: transparent;
+    border: 1px solid #707070;
+    color: #E5E5E5;
+}
+
+QPushButton#DestructiveButton:hover {
+    border-color: #FFFFFF;
+    color: #FFFFFF;
+}
+
+/* Checkbox */
+QCheckBox {
+    spacing: 8px;
+    color: #B3B3B3;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #5F6368;
+    border-radius: 2px;
+    background: #FFFFFF;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #1A73E8;
+    border-color: #1A73E8;
+    /* No easy check icon without image, but color indicates state */
+}
+
+/* Progress Bar */
+QProgressBar {
+    border: none;
+    background-color: #E8EAED;
+    border-radius: 4px;
+    height: 6px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #1A73E8;
+    border-radius: 4px;
+}
