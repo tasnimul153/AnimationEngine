@@ -38,6 +38,17 @@ class ProcessingWorker(QThread):
             # Default radius 2 is good for most HD content
             no_bg_image = SpriteProcessor.smooth_alpha_edges(no_bg_image, radius=2)
         
+        # QUALITY BOOST: Color Residue Cleanup
+        if self.settings.get('cleanup_residue', False):
+            target_color = self.settings.get('cleanup_color', (255, 255, 255))
+            tolerance = self.settings.get('cleanup_tolerance', 30)
+            no_bg_image = SpriteProcessor.remove_color_residue(
+                no_bg_image, 
+                target_color=target_color,
+                tolerance=tolerance,
+                edge_only=True
+            )
+        
         if self.settings.get('keep_original_position', False):
             # Do NOT crop. Do NOT resize/anchor (mostly).
             # Save the full frame with BG removed.

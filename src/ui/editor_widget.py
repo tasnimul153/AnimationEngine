@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import os
 from PyQt6.QtWidgets import QLabel, QMessageBox
-from PyQt6.QtCore import Qt, QPoint, QRect, pyqtSignal
-from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush
+from PyQt6.QtCore import Qt, QPoint, QPointF, QRect, QRectF, pyqtSignal
+from PyQt6.QtGui import QImage, QPixmap, QPainter, QColor, QPen, QBrush, QCursor
 
 class InteractivePreview(QLabel):
     # Tool Enums
@@ -15,7 +15,8 @@ class InteractivePreview(QLabel):
     
     # Signals
     file_changed = pyqtSignal()
-    zoom_changed = pyqtSignal(float) # Emits current zoom level
+    zoom_changed = pyqtSignal(float)
+    cursor_moved = pyqtSignal(int, int) # x, y in image coords
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -25,7 +26,7 @@ class InteractivePreview(QLabel):
         
         # State
         self.current_image_path = None
-        self.cv_image = None # BGRA
+        self.cv_image = None
         self.original_pixmap = None
         
         self.active_tool = self.TOOL_NONE
@@ -33,8 +34,14 @@ class InteractivePreview(QLabel):
         
         # Geometry
         self.draw_rect = QRect()
-        self.base_scale = 1.0 # Fit-to-window scale
-        self.zoom_level = 1.0 # User zoom multiplier
+        self.base_scale = 1.0
+        self.zoom_level = 1.0
+        
+        # Pan
+        self.pan_offset = QPointF(0, 0)
+        self.is_panning = False
+        self.pan_start = QPoint()
+        self.space_held = False
         
         # Tools State
         self.rect_start = None
@@ -52,6 +59,20 @@ class InteractivePreview(QLabel):
         
         # Overlay
         self.wand_overlay = None
+        
+        # Checkerboard
+        self.checker_pixmap = self._create_checkerboard(16)
+
+    def _create_checkerboard(self, size):
+        img = QImage(size*2, size*2, QImage.Format.Format_RGB32)
+        c1, c2 = QColor("#3a3a3a"), QColor("#2a2a2a")
+        for y in range(2):
+            for x in range(2):
+                color = c1 if (x + y) % 2 == 0 else c2
+                for py in range(size):
+                    for px in range(size):
+                        img.setPixelColor(x*size + px, y*size + py, color)
+        return QPixmap.fromImage(img)
 
     def set_tool(self, tool_id):
         self.active_tool = tool_id
@@ -75,6 +96,7 @@ class InteractivePreview(QLabel):
         self.lasso_points = []
         self.undo_stack = []
         self.zoom_level = 1.0
+        self.pan_offset = QPointF(0, 0)
         
         if path and os.path.exists(path):
             self.cv_image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
@@ -112,6 +134,7 @@ class InteractivePreview(QLabel):
         
     def zoom_reset(self):
         self.zoom_level = 1.0
+        self.pan_offset = QPointF(0, 0)
         self.zoom_changed.emit(self.zoom_level)
         self.update()
 
@@ -139,34 +162,42 @@ class InteractivePreview(QLabel):
     # --- Paint ---
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#111"))
+        painter.fillRect(self.rect(), QColor("#1a1a1a"))
         
         if self.original_pixmap is None:
             painter.setPen(QColor("#666"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "No Frame Selected")
             return
             
-        # Calculate scaled size
         w_widget = self.width()
         h_widget = self.height()
         w_img = self.original_pixmap.width()
         h_img = self.original_pixmap.height()
         
-        # Base scale to fit
         self.base_scale = min(w_widget / w_img, h_widget / h_img)
         effective_scale = self.base_scale * self.zoom_level
         
         draw_w = int(w_img * effective_scale)
         draw_h = int(h_img * effective_scale)
         
-        off_x = (w_widget - draw_w) // 2
-        off_y = (h_widget - draw_h) // 2
+        # Apply pan offset
+        off_x = int((w_widget - draw_w) / 2 + self.pan_offset.x())
+        off_y = int((h_widget - draw_h) / 2 + self.pan_offset.y())
         
         self.draw_rect = QRect(off_x, off_y, draw_w, draw_h)
         
+        # Checkerboard behind image
+        painter.save()
+        painter.setClipRect(self.draw_rect)
+        for y in range(off_y, off_y + draw_h, 32):
+            for x in range(off_x, off_x + draw_w, 32):
+                painter.drawPixmap(x, y, self.checker_pixmap)
+        painter.restore()
+        
+        # Draw image
         painter.drawPixmap(self.draw_rect, self.original_pixmap)
         
-        # Draw Overlay
+        # Overlay
         if self.wand_overlay is not None:
             scaled_overlay = self.wand_overlay.scaled(
                 self.draw_rect.size(), 
@@ -177,7 +208,7 @@ class InteractivePreview(QLabel):
             painter.drawPixmap(self.draw_rect.topLeft(), scaled_overlay)
             painter.setOpacity(1.0)
              
-        # Draw Active Tools
+        # Active tools
         if self.active_tool == self.TOOL_RECT and self.rect_start and self.rect_current:
             painter.setPen(QPen(QColor("#00FF00"), 2, Qt.PenStyle.DashLine))
             painter.setBrush(QBrush(QColor(0, 255, 0, 50)))
@@ -186,7 +217,6 @@ class InteractivePreview(QLabel):
             
         elif self.active_tool == self.TOOL_LASSO and self.lasso_points:
             painter.setPen(QPen(QColor("#00FF00"), 2, Qt.PenStyle.SolidLine))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
             for i in range(len(self.lasso_points) - 1):
                 painter.drawLine(self.lasso_points[i], self.lasso_points[i+1])
 
@@ -201,7 +231,35 @@ class InteractivePreview(QLabel):
         img_y = max(0, min(img_y, h-1))
         return img_x, img_y
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Space:
+            self.space_held = True
+            self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
+        elif event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+            self.delete_selection()
+        elif event.key() == Qt.Key.Key_Escape:
+            self.selection_mask = None
+            self.wand_overlay = None
+            self.update()
+        elif event.key() == Qt.Key.Key_I and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.invert_selection()
+        elif event.key() == Qt.Key.Key_Z and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.undo()
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key.Key_Space:
+            self.space_held = False
+            self.is_panning = False
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+
     def mousePressEvent(self, event):
+        # Pan with middle mouse or space+left
+        if event.button() == Qt.MouseButton.MiddleButton or (self.space_held and event.button() == Qt.MouseButton.LeftButton):
+            self.is_panning = True
+            self.pan_start = event.pos()
+            self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
+            return
+            
         if self.cv_image is None or not self.draw_rect.contains(event.pos()):
             return
             
@@ -210,28 +268,37 @@ class InteractivePreview(QLabel):
         
         if self.active_tool == self.TOOL_WAND:
             self.do_magic_wand(img_x, img_y)
-            
         elif self.active_tool == self.TOOL_RECT:
             self.rect_start = event.pos()
             self.rect_current = event.pos()
-            
         elif self.active_tool == self.TOOL_LASSO:
             self.lasso_points = [event.pos()]
-            
         elif self.active_tool == self.TOOL_ERASER:
             self.save_state()
             self.eraser_last_pos = (img_x, img_y)
             self._erase_at(img_x, img_y)
 
     def mouseMoveEvent(self, event):
+        # Emit cursor position
+        if self.cv_image is not None and self.draw_rect.contains(event.pos()):
+            img_x, img_y = self._widget_to_image(event.pos())
+            if img_x is not None:
+                self.cursor_moved.emit(img_x, img_y)
+        
+        # Pan
+        if self.is_panning:
+            delta = event.pos() - self.pan_start
+            self.pan_offset += QPointF(delta.x(), delta.y())
+            self.pan_start = event.pos()
+            self.update()
+            return
+            
         if self.active_tool == self.TOOL_RECT and self.rect_start:
             self.rect_current = event.pos()
             self.update()
-            
         elif self.active_tool == self.TOOL_LASSO and self.lasso_points:
             self.lasso_points.append(event.pos())
             self.update()
-            
         elif self.active_tool == self.TOOL_ERASER and self.eraser_last_pos:
             img_x, img_y = self._widget_to_image(event.pos())
             if img_x is not None:
@@ -239,12 +306,15 @@ class InteractivePreview(QLabel):
                 self.eraser_last_pos = (img_x, img_y)
 
     def mouseReleaseEvent(self, event):
+        if self.is_panning:
+            self.is_panning = False
+            self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor if self.space_held else Qt.CursorShape.ArrowCursor))
+            return
+            
         if self.active_tool == self.TOOL_RECT and self.rect_start:
             self.finalize_rect_selection()
-            
         elif self.active_tool == self.TOOL_LASSO and self.lasso_points:
             self.finalize_lasso_selection()
-            
         elif self.active_tool == self.TOOL_ERASER:
             self.eraser_last_pos = None
 
@@ -252,11 +322,9 @@ class InteractivePreview(QLabel):
         if self.cv_image is None: return
         h, w = self.cv_image.shape[:2]
         r = self.brush_size // 2
-        
         y1, y2 = max(0, y-r), min(h, y+r)
         x1, x2 = max(0, x-r), min(w, x+r)
         
-        # Create circular mask
         for py in range(y1, y2):
             for px in range(x1, x2):
                 if (px - x)**2 + (py - y)**2 <= r**2:
@@ -275,7 +343,6 @@ class InteractivePreview(QLabel):
         upDiff = (tol, tol, tol)
         flags = 4 | (255 << 8) | cv2.FLOODFILL_MASK_ONLY | cv2.FLOODFILL_FIXED_RANGE
         
-        # Make a contiguous copy of BGR channels for floodFill
         src_img = np.ascontiguousarray(self.cv_image[:, :, :3])
         cv2.floodFill(src_img, mask, (seed_x, seed_y), (0,0,0), loDiff, upDiff, flags)
         self.selection_mask = mask[1:-1, 1:-1]
@@ -330,18 +397,6 @@ class InteractivePreview(QLabel):
         if self.selection_mask is None: return
         self.selection_mask = 255 - self.selection_mask
         self.update_overlay()
-
-    def keyPressEvent(self, event):
-        if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
-            self.delete_selection()
-        elif event.key() == Qt.Key.Key_Escape:
-            self.selection_mask = None
-            self.wand_overlay = None
-            self.update()
-        elif event.key() == Qt.Key.Key_I and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.invert_selection()
-        elif event.key() == Qt.Key.Key_Z and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-            self.undo()
 
     def delete_selection(self):
         if self.selection_mask is None or self.cv_image is None: return

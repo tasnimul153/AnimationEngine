@@ -267,16 +267,23 @@ class MainWindow(QMainWindow):
         
         # Model
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["u2net", "u2net_human_seg", "isnet-anime", "u2netp"])
-        self.model_combo.setCurrentText("u2net")
+        self.model_combo.addItems([
+            "isnet-general-use",  # Best balance of speed/quality
+            "u2net",              # Classic, reliable
+            "birefnet-general",   # State-of-the-art (slower, 1GB download)
+            "isnet-anime",        # For cartoons/anime
+            "u2net_human_seg",    # Optimized for people
+        ])
+        self.model_combo.setCurrentText("isnet-general-use")
         add_block(layout_qual, "AI Model", self.model_combo,
-                  "Select 'isnet-anime' for cartoons/sprites. 'u2net' is best for general photo realism.")
+                  "'isnet-general-use' is recommended. 'birefnet-general' is most accurate but slower.")
         
-        # Alpha Matting
+        # Alpha Matting (enabled by default for better edges)
         self.alpha_matting_cb = QCheckBox("Enable Alpha Matting")
+        self.alpha_matting_cb.setChecked(True)  # ON by default
         self.alpha_matting_cb.toggled.connect(self.toggle_alpha_options)
-        add_block(layout_qual, "Detail Preservation", self.alpha_matting_cb,
-                  "Uses a secondary slow pass to refine transparency. Essential for hair, smoke, or shadows.")
+        add_block(layout_qual, "Edge Refinement", self.alpha_matting_cb,
+                  "Improves edge quality. Essential for hair, smoke, or semi-transparent areas.")
         
         # Edge Smoothing (NEW)
         self.edge_smoothing_cb = QCheckBox("Enable Edge Smoothing")
@@ -286,7 +293,7 @@ class MainWindow(QMainWindow):
 
         # Thresholds
         self.alpha_group = QGroupBox("Matting Thresholds")
-        self.alpha_group.setEnabled(False)
+        self.alpha_group.setEnabled(True)  # Enabled by default since alpha matting is on
         layout_alpha = QVBoxLayout(self.alpha_group)
         
         self.fg_threshold = QSpinBox()
@@ -302,6 +309,31 @@ class MainWindow(QMainWindow):
                   "Pixels darker than this are Transparent. Raise it if noise remains.")
         
         layout_qual.addWidget(self.alpha_group)
+        
+        # Background Color Cleanup (NEW)
+        self.cleanup_cb = QCheckBox("Clean Residual Background")
+        self.cleanup_cb.setChecked(True)  # On by default
+        self.cleanup_cb.toggled.connect(self.toggle_cleanup_options)
+        add_block(layout_qual, "Color Cleanup", self.cleanup_cb,
+                  "Removes leftover pixels similar to the background color. Great for stubborn white/green/blue screens.")
+        
+        self.cleanup_group = QGroupBox("Cleanup Settings")
+        self.cleanup_group.setEnabled(True)
+        layout_cleanup = QVBoxLayout(self.cleanup_group)
+        
+        self.cleanup_color_combo = QComboBox()
+        self.cleanup_color_combo.addItems(["White", "Black", "Green (Chroma)", "Blue (Chroma)", "Custom..."])
+        add_block(layout_cleanup, "Background Color", self.cleanup_color_combo,
+                  "Select the original background color to clean up.")
+        
+        self.cleanup_tolerance = QSpinBox()
+        self.cleanup_tolerance.setRange(5, 100)
+        self.cleanup_tolerance.setValue(30)
+        add_block(layout_cleanup, "Cleanup Tolerance", self.cleanup_tolerance,
+                  "Higher = more aggressive cleanup. Start at 30 and increase if residue remains.")
+        
+        layout_qual.addWidget(self.cleanup_group)
+        
         layout_qual.addStretch()
         scroll_qual.setWidget(scroll_content_qual)
 
@@ -435,6 +467,18 @@ class MainWindow(QMainWindow):
         enabled = self.alpha_matting_cb.isChecked()
         self.alpha_group.setEnabled(enabled)
 
+    def toggle_cleanup_options(self):
+        enabled = self.cleanup_cb.isChecked()
+        self.cleanup_group.setEnabled(enabled)
+
+    def get_cleanup_color(self):
+        text = self.cleanup_color_combo.currentText()
+        if text == "White": return (255, 255, 255)
+        if text == "Black": return (0, 0, 0)
+        if text == "Green (Chroma)": return (0, 255, 0)
+        if text == "Blue (Chroma)": return (0, 0, 255)
+        return (255, 255, 255) # Default to white
+    
     def toggle_fps_input(self):
         is_target_fps = self.extract_mode.currentIndex() == 1
         self.target_fps_input.setEnabled(is_target_fps)
@@ -516,7 +560,10 @@ class MainWindow(QMainWindow):
             'alpha_matting_foreground_threshold': self.fg_threshold.value(),
             'alpha_matting_background_threshold': self.bg_threshold.value(),
             'model_name': self.model_combo.currentText(),
-            'edge_smoothing': self.edge_smoothing_cb.isChecked()
+            'edge_smoothing': self.edge_smoothing_cb.isChecked(),
+            'cleanup_residue': self.cleanup_cb.isChecked(),
+            'cleanup_color': self.get_cleanup_color(),
+            'cleanup_tolerance': self.cleanup_tolerance.value()
         }
 
         self.worker = ProcessingWorker(settings)
