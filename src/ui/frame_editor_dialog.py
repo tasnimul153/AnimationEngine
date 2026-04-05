@@ -11,18 +11,27 @@ class FrameEditorDialog(QDialog):
         self.setWindowTitle("Frame Editor")
         self.resize(1200, 900)
         self.setStyleSheet("""
-            QDialog { background: #1a1a1a; }
-            QLabel { color: #ccc; }
-            QPushButton { 
-                background: #333; color: #fff; border: none; 
-                padding: 8px 14px; border-radius: 4px; font-weight: bold;
+            QDialog { background-color: #1C1C1C; color: #F3F3F3; font-family: 'Segoe UI', 'Inter', sans-serif; }
+            QLabel { color: #C0C0C0; font-size: 13px; }
+            QPushButton {
+                background-color: #2D2D2D; color: #F3F3F3;
+                border: 1px solid #555555; border-radius: 4px;
+                padding: 6px 14px; font-weight: 500; font-size: 13px; min-height: 28px;
             }
-            QPushButton:hover { background: #444; }
-            QPushButton:checked { background: #2a6; border: 1px solid #3b7; }
-            QSlider::groove:horizontal { background: #444; height: 6px; border-radius: 3px; }
-            QSlider::handle:horizontal { background: #888; width: 14px; margin: -4px 0; border-radius: 7px; }
-            QSpinBox { background: #333; color: #fff; border: 1px solid #444; padding: 4px; }
-            QStatusBar { background: #111; color: #888; }
+            QPushButton:hover { background-color: #383838; border-color: #777777; }
+            QPushButton:pressed { background-color: #1C1C1C; }
+            QPushButton:checked { background-color: #003F74; border: 1px solid #0078D4; color: #60AAFF; }
+            QPushButton#SaveButton { background-color: #0078D4; color: #FFFFFF; border: none; font-weight: 600; }
+            QPushButton#SaveButton:hover { background-color: #106EBE; }
+            QSlider::groove:horizontal { background: #3D3D3D; height: 4px; border-radius: 2px; }
+            QSlider::sub-page:horizontal { background: #0078D4; border-radius: 2px; }
+            QSlider::handle:horizontal { background: #FFFFFF; border: 2px solid #0078D4; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; }
+            QSlider::handle:horizontal:hover { background: #0078D4; }
+            QSpinBox { background-color: #2D2D2D; color: #F3F3F3; border: 1px solid #4A4A4A; border-radius: 4px; padding: 4px 8px; font-size: 13px; }
+            QSpinBox:focus { border-color: #0078D4; }
+            QSpinBox::up-button, QSpinBox::down-button { background: #383838; border: none; width: 16px; }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover { background: #0078D4; }
+            QStatusBar { background-color: #161616; color: #7A7A7A; font-size: 11px; border-top: 1px solid #3D3D3D; }
         """)
         
         self.image_path = image_path
@@ -38,8 +47,8 @@ class FrameEditorDialog(QDialog):
         toolbar = QHBoxLayout()
         toolbar.setSpacing(6)
         
-        lbl_tools = QLabel("🛠 Tools:")
-        lbl_tools.setStyleSheet("font-weight: bold; color: #aaa;")
+        lbl_tools = QLabel("Tools:")
+        lbl_tools.setStyleSheet("font-weight: 600; color: #A8A8A8; font-size: 11px; text-transform: uppercase;")
         
         self.btn_wand = QPushButton("✨ Wand")
         self.btn_wand.setCheckable(True)
@@ -59,7 +68,7 @@ class FrameEditorDialog(QDialog):
         
         sep1 = QFrame()
         sep1.setFrameShape(QFrame.Shape.VLine)
-        sep1.setStyleSheet("color: #444;")
+        sep1.setStyleSheet("color: #3D3D3D;")
         
         toolbar.addWidget(lbl_tools)
         toolbar.addWidget(self.btn_wand)
@@ -118,7 +127,7 @@ class FrameEditorDialog(QDialog):
         self.btn_zoom_reset.clicked.connect(lambda: self.editor_widget.zoom_reset())
         
         self.lbl_zoom_val = QLabel("100%")
-        self.lbl_zoom_val.setStyleSheet("color: #888; min-width: 45px;")
+        self.lbl_zoom_val.setStyleSheet("color: #A8A8A8; min-width: 45px; font-size: 12px;")
         
         toolbar2.addWidget(lbl_zoom)
         toolbar2.addWidget(self.btn_zoom_out)
@@ -137,15 +146,15 @@ class FrameEditorDialog(QDialog):
         toolbar2.addWidget(self.btn_invert)
         toolbar2.addStretch()
         
-        lbl_hint = QLabel("Space+Drag to pan | Scroll to zoom")
-        lbl_hint.setStyleSheet("color: #555; font-style: italic;")
+        lbl_hint = QLabel("Space+Drag to pan  ·  Scroll to zoom")
+        lbl_hint.setStyleSheet("color: #5C5C5C; font-style: italic; font-size: 11px;")
         toolbar2.addWidget(lbl_hint)
         
         layout.addLayout(toolbar2)
         
         # --- Editor Area ---
         self.editor_widget = InteractivePreview()
-        self.editor_widget.setStyleSheet("background-color: #111; border: 1px solid #333; border-radius: 4px;")
+        self.editor_widget.setStyleSheet("background-color: #161616; border: 1px solid #3D3D3D; border-radius: 4px;")
         self.editor_widget.zoom_changed.connect(self.on_zoom_changed)
         self.editor_widget.cursor_moved.connect(self.on_cursor_moved)
         
@@ -156,11 +165,11 @@ class FrameEditorDialog(QDialog):
         footer.setContentsMargins(0, 8, 0, 0)
         
         self.btn_cancel = QPushButton("Cancel")
-        self.btn_cancel.setStyleSheet("background: transparent; border: 1px solid #555;")
+        self.btn_cancel.setStyleSheet("background: transparent; border: 1px solid #4A4A4A; color: #A8A8A8;")
         self.btn_cancel.clicked.connect(self.reject)
         
-        self.btn_save = QPushButton("💾 Save Changes")
-        self.btn_save.setStyleSheet("background: #2a6; color: #fff;")
+        self.btn_save = QPushButton("Save Changes")
+        self.btn_save.setObjectName("SaveButton")
         self.btn_save.clicked.connect(self.save_and_close)
         
         footer.addStretch()

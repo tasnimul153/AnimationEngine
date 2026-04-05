@@ -82,14 +82,14 @@ class MainWindow(QMainWindow):
         
         # Source Stats
         self.source_info_label = QLabel("Source: -")
-        self.source_info_label.setStyleSheet("color: #B3B3B3; font-weight: bold;")
+        self.source_info_label.setStyleSheet("color: #A8A8A8; font-weight: 600;")
         dash_layout.addWidget(self.source_info_label)
         
         dash_layout.addStretch()
         
         # Output Estimates
         self.est_frames_label = QLabel("Output: -")
-        self.est_frames_label.setStyleSheet("color: #E50914; font-size: 16px; font-weight: bold;")
+        self.est_frames_label.setStyleSheet("color: #60AAFF; font-size: 15px; font-weight: 600;")
         dash_layout.addWidget(self.est_frames_label)
         
         layout.addWidget(self.dashboard_card)
@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
         input_layout.addWidget(input_title)
         
         self.video_path_label = QLabel("No video selected")
-        self.video_path_label.setStyleSheet("color: #5F6368; font-style: italic;")
+        self.video_path_label.setStyleSheet("color: #7A7A7A; font-style: italic;")
         self.video_path_label.setWordWrap(True)
         
         self.select_video_btn = QPushButton("Select Video File")
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
         output_layout.addWidget(output_title)
         
         self.output_path_label = QLabel(self.selected_output)
-        self.output_path_label.setStyleSheet("color: #5F6368; font-size: 12px;")
+        self.output_path_label.setStyleSheet("color: #7A7A7A; font-size: 11px;")
         self.output_path_label.setWordWrap(True)
         
         self.select_output_btn = QPushButton("Change Output Folder")

@@ -65,7 +65,7 @@ class InteractivePreview(QLabel):
 
     def _create_checkerboard(self, size):
         img = QImage(size*2, size*2, QImage.Format.Format_RGB32)
-        c1, c2 = QColor("#3a3a3a"), QColor("#2a2a2a")
+        c1, c2 = QColor("#2D2D2D"), QColor("#242424")
         for y in range(2):
             for x in range(2):
                 color = c1 if (x + y) % 2 == 0 else c2
@@ -162,10 +162,10 @@ class InteractivePreview(QLabel):
     # --- Paint ---
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#1a1a1a"))
+        painter.fillRect(self.rect(), QColor("#161616"))
         
         if self.original_pixmap is None:
-            painter.setPen(QColor("#666"))
+            painter.setPen(QColor("#5C5C5C"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "No Frame Selected")
             return
             

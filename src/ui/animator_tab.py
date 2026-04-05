@@ -110,7 +110,7 @@ class AnimatorTab(QWidget):
         lbl_preview.setObjectName("SectionTitle")
         
         self.lbl_filename = QLabel("")
-        self.lbl_filename.setStyleSheet("color: #888; font-style: italic;")
+        self.lbl_filename.setStyleSheet("color: #7A7A7A; font-style: italic; font-size: 11px;")
         self.lbl_filename.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         
         header_layout.addWidget(lbl_preview)
@@ -121,7 +121,7 @@ class AnimatorTab(QWidget):
         # Preview Area
         self.preview_label = QLabel("Select an animation to start")
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.preview_label.setStyleSheet("background-color: #000; border-radius: 4px;")
+        self.preview_label.setStyleSheet("background-color: #161616; border-radius: 4px; color: #5C5C5C; font-size: 13px;")
         self.preview_label.setMinimumSize(400, 300)
         center_layout.addWidget(self.preview_label, 3) # Stretch 3
         
